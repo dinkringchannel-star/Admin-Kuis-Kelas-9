@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Toko Kuis</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #5568d3;
+    }
+
+    .btn-success {
+      background: #25D366;
+      color: #fff;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #1ebe57;
+    }
+
+    .btn-danger {
+      background: #e74c3c;
+      color: #fff;
+    }
+
+    .btn-warning {
+      background: #f39c12;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #95a5a6;
+      color: #fff;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 600;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .login-form {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .error-msg {
+      color: #e74c3c;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .logout-btn {
+      background: #e74c3c;
+      color: #fff;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .logout-btn:hover {
+      background: #c0392b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+
+    th {
+      background: #667eea;
+      color: #fff;
+    }
+
+    tr:hover {
+      background: #f8f9fa;
+    }
+
+    .status-paid {
+      color: #25D366;
+      font-weight: 700;
+    }
+
+    .status-unpaid {
+      color: #e74c3c;
+      font-weight: 700;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 30px;
+      color: #999;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .refresh-btn {
+      background: #667eea;
+      color: #fff;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+
+    .refresh-btn:hover {
+      background: #5568d3;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      border-left: 4px solid #667eea;
+    }
+
+    .stat-box h3 {
+      font-size: 24px;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .stat-box p {
+      color: #666;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- HALAMAN LOGIN -->
+    <div id="loginPage" class="card">
+      <a href="index.html" class="back-link">← Kembali ke Toko</a>
+      <h2 style="text-align:center;">🔐 Login Admin</h2>
+      <div class="login-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="adminUsername" placeholder="Masukkan username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="adminPassword" placeholder="Masukkan password">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="loginAdmin()">Login</button>
+        <div class="error-msg" id="loginError">Username atau password salah!</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD ADMIN -->
+    <div id="adminDashboard" class="card hidden">
+      <div class="admin-header">
+        <div>
+          <a href="index.html" class="back-link" style="margin:0;">← Kembali ke Toko</a>
+          <button class="refresh-btn" onclick="loadOrders()">🔄 Refresh</button>
+        </div>
+        <button class="logout-btn" onclick="logoutAdmin()">🚪 Logout</button>
+      </div>
+      <h1>📋 Dashboard Admin</h1>
+
+      <div class="stats" id="statsBox"></div>
+      <div id="orderList">
+        <div class="loading"><span class="spinner"></span>Memuat data pesanan...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ⚠️ GANTI DENGAN URL APPS SCRIPT ANDA (URL BARU SETELAH RE-DEPLOY)
+    const API_URL = "https://script.google.com/macros/s/AKfycbyCIVHIzFgbMmh-ffwJ8ypJSlz_F1KmZzmZZ-tGFsjamz1Wwmrn9CR5aGlOelEfmg-SrA/exec";
+
+    const ADMIN_CREDENTIALS = {
+      username: "admin",
+      password: "admin123"
+    };
+
+    let orders = [];
+
+    // ============================================
+    // 🔑 FUNGSI API - SOLUSI FINAL CORS
+    // ============================================
+
+    // POST ke Apps Script dengan Content-Type: text/plain (bypass CORS preflight)
+    async function apiPost(data) {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'  // ⚠️ KUNCI: text/plain, BUKAN application/json
+        },
+        body: JSON.stringify(data),
+        redirect: 'follow'
+      });
+
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { success: true, message: 'OK' };
+      }
+    }
+
+    // GET dari Apps Script
+    async function apiGet(action) {
+      const response = await fetch(`${API_URL}?action=${action}`, {
+        redirect: 'follow'
+      });
+      return await response.json();
+    }
+
+    // ============================================
+    // LOGIN & NAVIGASI
+    // ============================================
+
+    function loginAdmin() {
+      const username = document.getElementById('adminUsername').value.trim();
+      const password = document.getElementById('adminPassword').value.trim();
+
+      if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        showDashboard();
+      } else {
+        document.getElementById('loginError').classList.add('show');
+      }
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem('adminLoggedIn');
+      document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('adminDashboard').classList.add('hidden');
+      document.getElementById('adminUsername').value = '';
+      document.getElementById('adminPassword').value = '';
+      document.getElementById('loginError').classList.remove('show');
+    }
+
+    function showDashboard() {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('adminDashboard').classList.remove('hidden');
+      loadOrders();
+    }
+
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+      showDashboard();
+    }
+
+    // ============================================
+    // LOAD & RENDER
+    // ============================================
+
+    async function loadOrders() {
+      const container = document.getElementById('orderList');
+      container.innerHTML = '<div class="loading"><span class="spinner"></span>Memuat data pesanan...</div>';
+
+      try {
+        const result = await apiGet('getOrders');
+
+        if (result.success) {
+          orders = result.data;
+          renderStats();
+          renderOrderList();
+        } else {
+          container.innerHTML = `<div class="empty">⚠️ ${result.error}</div>`;
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="empty">⚠️ Gagal terhubung: ${err.message}</div>`;
+      }
+    }
+
+    function renderStats() {
+      const total = orders.length;
+      const paid = orders.filter(o => o.paid).length;
+      const unpaid = total - paid;
+      const revenue = orders.filter(o => o.paid).reduce((s, o) => s + Number(o.price), 0);
+
+      document.getElementById('statsBox').innerHTML = `
+      <div class="stat-box"><h3>${total}</h3><p>Total Pesanan</p></div>
+      <div class="stat-box" style="border-color:#25D366;"><h3 style="color:#25D366;">${paid}</h3><p>Lunas</p></div>
+      <div class="stat-box" style="border-color:#e74c3c;"><h3 style="color:#e74c3c;">${unpaid}</h3><p>Belum Bayar</p></div>
+      <div class="stat-box" style="border-color:#f39c12;"><h3 style="color:#f39c12;">Rp ${revenue.toLocaleString('id-ID')}</h3><p>Pendapatan</p></div>
+    `;
+    }
+
+    function renderOrderList() {
+      const container = document.getElementById('orderList');
+      if (orders.length === 0) {
+        container.innerHTML = '<div class="empty">Belum ada pesanan.</div>';
+        return;
+      }
+
+      container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Tanggal</th><th>Nama</th><th>No. WA</th><th>Kuis</th><th>Harga</th><th>Status</th><th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(o => `
+            <tr>
+              <td style="font-size:12px;">${o.timestamp}</td>
+              <td>${o.name}</td>
+              <td>${o.wa}</td>
+              <td>${o.quizTitle}</td>
+              <td>Rp ${Number(o.price).toLocaleString('id-ID')}</td>
+              <td>
+                <span class="${o.paid ? 'status-paid' : 'status-unpaid'}">
+                  ${o.paid ? '✅ Lunas' : '⏳ Belum Bayar'}
+                </span>
+                <br>
+                <button class="btn ${o.paid ? 'btn-warning' : 'btn-success'}" 
+                        style="padding:4px 8px; font-size:11px; margin-top:5px;"
+                        onclick="togglePaid('${o.id}', ${!o.paid})">
+                  ${o.paid ? 'Batalkan' : 'Tandai Lunas'}
+                </button>
+              </td>
+              <td>
+                <button class="btn btn-success" 
+                        id="btn-send-('${o.id}')"
+                        style="padding:6px 10px; font-size:12px;"
+                        onclick="sendLink('${o.id}')">
+                  ${o.linkSent ? '🔁 Kirim Ulang' : '📤 Kirim Link'}
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    }
+
+    // ============================================
+    // 🔧 UPDATE & KIRIM LINK (SUDAH DIPERBAIKI)
+    // ============================================
+
+    async function togglePaid(id, paid) {
+      const btn = event.target;
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳';
+
+      try {
+        const result = await apiPost({ action: 'updatePaid', id: id, paid: paid });
+
+        if (result.success) {
+          const order = orders.find(o => o.id == id);
+          if (order) order.paid = paid;
+          renderStats();
+          renderOrderList();
+          showNotification(`✅ Status berhasil diupdate`, 'success');
+        } else {
+          throw new Error(result.error || 'Gagal update');
+        }
+      } catch (err) {
+        alert('❌ Gagal: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+
+    function sendLink(id) {
+      const order = orders.find(o => String(o.id) === String(id));
+      if (!order) {
+        alert('❌ Data pesanan tidak ditemukan.');
+        return;
+      }
+
+      if (!order.wa) {
+        alert('❌ Nomor WhatsApp pembeli belum tersedia.');
+        return;
+      }
+
+      if (!order.link || !/^https?:\/\//i.test(String(order.link).trim())) {
+        alert('❌ Link produk/kuis belum tersedia atau tidak valid pada data pesanan.');
+        return;
+      }
+
+      if (!order.paid && !confirm('⚠️ Pembeli belum membayar. Tetap kirim link?')) return;
+
+      // Normalisasi nomor Indonesia: 08xxx -> 628xxx, +62xxx -> 62xxx
+      let buyerWA = String(order.wa).replace(/\D/g, '');
+      if (buyerWA.startsWith('0')) buyerWA = '62' + buyerWA.slice(1);
+      if (!buyerWA || buyerWA.length < 9) {
+        alert('❌ Nomor WhatsApp tidak valid: ' + order.wa);
+        return;
+      }
+
+      // Encode pesan secara benar agar spasi, emoji, dan URL tidak merusak tautan WA.
+      const message =
+        `Halo ${order.name || 'Kak'} 👋\n\n` +
+        `Terima kasih telah memesan "${order.quizTitle || 'produk'}" di Toko Kuis.\n\n` +
+        `Berikut link produk yang Anda beli:\n${String(order.link).trim()}\n\n` +
+        `Selamat menggunakan produk ini! 🎓`;
+
+      const waUrl = `https://wa.me/${buyerWA}?text=${encodeURIComponent(message)}`;
+
+      // Buka WhatsApp langsung saat tombol diklik, supaya tidak diblokir popup.
+      const btn = document.getElementById(`btn-send-${id}`);
+      const originalText = btn ? btn.innerHTML : '📤 Kirim Link';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Membuka WhatsApp...';
+      }
+
+      const waWindow = window.open(waUrl, '_blank');
+      if (!waWindow) {
+        // Fallback: navigasi tab saat ini bila popup diblokir.
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        if (confirm('Popup diblokir browser. Buka WhatsApp di tab ini?')) {
+          window.location.href = waUrl;
+        } else {
+          alert('Izinkan popup untuk situs ini, lalu klik Kirim Link kembali.');
+        }
+        return;
+      }
+
+      // Ini hanya menandai bahwa WhatsApp dibuka; pengiriman tetap perlu ditekan di WhatsApp.
+      apiPost({ action: 'updateLinkSent', id: id })
+        .then(result => {
+          if (result && result.success) {
+            order.linkSent = true;
+            showNotification('✅ WhatsApp dibuka dengan pesan dan link produk. Tekan Kirim di WhatsApp untuk mengirim.', 'success');
+          } else {
+            showNotification('WhatsApp dibuka, tetapi status pesanan tidak berhasil diperbarui.', 'warning');
+          }
+        })
+        .catch(err => {
+          console.error('Gagal memperbarui status link:', err);
+          showNotification('WhatsApp dibuka. Status pengiriman tidak dapat diperbarui.', 'warning');
+        })
+        .finally(() => {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        });
+    }
+
+    // ============================================
+    // NOTIFIKASI
+    // ============================================
+
+    function showNotification(message, type = 'success') {
+      const colors = {
+        success: '#25D366',
+        error: '#e74c3c',
+        warning: '#f39c12'
+      };
+      const notif = document.createElement('div');
+      notif.style.cssText = `
+      position: fixed; top: 20px; right: 20px;
+      background: ${colors[type]}; color: white;
+      padding: 15px 25px; border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      z-index: 9999; font-weight: 600;
+      animation: slideIn 0.3s ease;
+    `;
+      notif.textContent = message;
+      document.body.appendChild(notif);
+
+      setTimeout(() => {
+        notif.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notif.remove(), 300);
+      }, 3000);
+    }
+
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
+  `;
+    document.head.appendChild(style);
+
+    document.getElementById('adminPassword').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') loginAdmin();
+    });
+  </script>
+</body>
+
+</html>
