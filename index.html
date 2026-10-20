@@ -273,6 +273,48 @@
       color: #666;
       font-size: 13px;
     }
+
+    .filter-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0 10px;
+    }
+    .filter-toolbar input {
+      flex: 1;
+      min-width: 240px;
+      padding: 11px 13px;
+      border: 1px solid #d8dbea;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .filter-count {
+      color: #666;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .table-wrap table {
+      min-width: 850px;
+    }
+    .filter-row th {
+      background: #f0f2ff;
+      padding: 7px;
+    }
+    .column-filter {
+      width: 100%;
+      min-width: 80px;
+      padding: 7px 6px;
+      border: 1px solid #d8dbea;
+      border-radius: 6px;
+      background: #fff;
+      color: #333;
+      font-size: 12px;
+    }
   </style>
 </head>
 
@@ -430,52 +472,170 @@
     `;
     }
 
+    // ============================================
+    // SEARCH ENGINE & FILTER PER KOLOM
+    // ============================================
+
     function renderOrderList() {
       const container = document.getElementById('orderList');
-      if (orders.length === 0) {
+
+      if (!orders || orders.length === 0) {
         container.innerHTML = '<div class="empty">Belum ada pesanan.</div>';
         return;
       }
 
+    //kirim link adalah aksi
       container.innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Tanggal</th><th>Nama</th><th>No. WA</th><th>Kuis</th><th>Harga</th><th>Status</th><th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${orders.map(o => `
-            <tr>
-              <td style="font-size:12px;">${o.timestamp}</td>
-              <td>${o.name}</td>
-              <td>${o.wa}</td>
-              <td>${o.quizTitle}</td>
-              <td>Rp ${Number(o.price).toLocaleString('id-ID')}</td>
-              <td>
-                <span class="${o.paid ? 'status-paid' : 'status-unpaid'}">
-                  ${o.paid ? '✅ Lunas' : '⏳ Belum Bayar'}
-                </span>
-                <br>
-                <button class="btn ${o.paid ? 'btn-warning' : 'btn-success'}" 
-                        style="padding:4px 8px; font-size:11px; margin-top:5px;"
-                        onclick="togglePaid('${o.id}', ${!o.paid})">
-                  ${o.paid ? 'Batalkan' : 'Tandai Lunas'}
-                </button>
-              </td>
-              <td>
-                <button class="btn btn-success" 
-                        id="btn-send-('${o.id}')"
-                        style="padding:6px 10px; font-size:12px;"
-                        onclick="sendLink('${o.id}')">
-                  ${o.linkSent ? '🔁 Kirim Ulang' : '📤 Kirim Link'}
-                </button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
+        <div class="filter-toolbar">
+          <input id="globalSearch" type="search"
+            placeholder="🔎 Cari nama, nomor WA, kuis, tanggal, status, harga..."
+            oninput="applyFilters()">
+          <button class="btn btn-secondary" type="button" onclick="resetFilters()">Reset Filter</button>
+          <span id="filterCount" class="filter-count"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Nama</th>
+                <th>No. WA</th>
+                <th>Kuis</th>
+                <th>Harga</th>
+                <th>Status</th>
+                <th>Kirim Link</th> 
+              </tr>
+              <tr class="filter-row">
+                <th><input class="column-filter" id="filterTanggal" placeholder="Filter tanggal" oninput="applyFilters()"></th>
+                <th><input class="column-filter" id="filterNama" placeholder="Filter nama" oninput="applyFilters()"></th>
+                <th><input class="column-filter" id="filterWA" placeholder="Filter nomor WA" oninput="applyFilters()"></th>
+                <th><input class="column-filter" id="filterKuis" placeholder="Filter kuis" oninput="applyFilters()"></th>
+                <th><input class="column-filter" id="filterHarga" placeholder="Filter harga" oninput="applyFilters()"></th>
+                <th>
+                  <select class="column-filter" id="filterStatus" onchange="applyFilters()">
+                    <option value="">Semua status</option>
+                    <option value="lunas">Lunas</option>
+                    <option value="belum">Belum Bayar</option>
+                  </select>
+                </th>
+                <th>
+                  <select class="column-filter" id="filterAksi" onchange="applyFilters()">
+                    <option value="">Semua</option>
+                    <option value="terkirim">Link sudah dikirim</option>
+                    <option value="belum">Link belum dikirim</option>
+                  </select>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      `;
+      applyFilters();
+    }
+
+    function normalizeText(value) {
+      return String(value ?? '').toLocaleLowerCase('id-ID').trim();
+    }
+
+    function applyFilters() {
+      const valueOf = id => document.getElementById(id)?.value || '';
+      const search = normalizeText(valueOf('globalSearch'));
+      const tanggal = normalizeText(valueOf('filterTanggal'));
+      const nama = normalizeText(valueOf('filterNama'));
+      const wa = normalizeText(valueOf('filterWA'));
+      const kuis = normalizeText(valueOf('filterKuis'));
+      const harga = normalizeText(valueOf('filterHarga'));
+      const status = valueOf('filterStatus');
+      const aksi = valueOf('filterAksi');
+
+      const filtered = orders.filter(o => {
+        const dateText = normalizeText(o.timestamp);
+        const nameText = normalizeText(o.name);
+        const waText = normalizeText(o.wa);
+        const quizText = normalizeText(o.quizTitle);
+        const priceText = normalizeText(Number(o.price || 0).toLocaleString('id-ID'));
+        const statusText = o.paid ? 'lunas' : 'belum bayar';
+        const aksiText = o.linkSent ? 'terkirim sudah dikirim' : 'belum belum dikirim';
+
+        const allText = normalizeText([
+          o.timestamp, o.name, o.wa, o.quizTitle, o.price,
+          priceText, statusText, aksiText
+        ].join(' '));
+
+        return (!search || allText.includes(search)) &&
+          (!tanggal || dateText.includes(tanggal)) &&
+          (!nama || nameText.includes(nama)) &&
+          (!wa || waText.includes(wa)) &&
+          (!kuis || quizText.includes(kuis)) &&
+          (!harga || priceText.includes(harga) || normalizeText(o.price).includes(harga)) &&
+          (!status || (status === 'lunas' ? !!o.paid : !o.paid)) &&
+          (!aksi || (aksi === 'terkirim' ? !!o.linkSent : !o.linkSent));
+      });
+
+      renderFilteredRows(filtered);
+      const count = document.getElementById('filterCount');
+      if (count) count.textContent = `Menampilkan ${filtered.length} dari ${orders.length} pesanan`;
+    }
+
+    function renderFilteredRows(list) {
+      const tbody = document.getElementById('ordersTableBody');
+      if (!tbody) return;
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">Tidak ada pesanan yang cocok dengan filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(o => `
+        <tr>
+          <td style="font-size:12px;">${escapeHTML(o.timestamp ?? '-')}</td>
+          <td>${escapeHTML(o.name ?? '-')}</td>
+          <td>${escapeHTML(o.wa ?? '-')}</td>
+          <td>${escapeHTML(o.quizTitle ?? '-')}</td>
+          <td>Rp ${Number(o.price || 0).toLocaleString('id-ID')}</td>
+          <td>
+            <span class="${o.paid ? 'status-paid' : 'status-unpaid'}">
+              ${o.paid ? '✅ Lunas' : '⏳ Belum Bayar'}
+            </span><br>
+            <button class="btn ${o.paid ? 'btn-warning' : 'btn-success'}"
+              style="padding:4px 8px;font-size:11px;margin-top:5px;"
+              onclick="togglePaid('${escapeJS(o.id)}', ${!o.paid})">
+              ${o.paid ? 'Batalkan' : 'Tandai Lunas'}
+            </button>
+          </td>
+          <td>
+            <button class="btn btn-success"
+              id="btn-send-${escapeHTML(o.id)}"
+              style="padding:6px 10px;font-size:12px;"
+              onclick="sendLink('${escapeJS(o.id)}')">
+              ${o.linkSent ? '🔁 Kirim Ulang' : '📤 Kirim Link'}
+            </button>
+            <div style="font-size:11px;margin-top:4px;color:#666;">
+              ${o.linkSent ? 'Link sudah dikirim' : 'Belum dikirim'}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    function escapeJS(value) {
+      return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    function resetFilters() {
+      ['globalSearch', 'filterTanggal', 'filterNama', 'filterWA',
+       'filterKuis', 'filterHarga', 'filterStatus', 'filterAksi'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      applyFilters();
     }
 
     // ============================================
