@@ -668,10 +668,31 @@
     }
 
 
+    function normalisasiNomorWhatsApp(nomor) {
+      // Hanya ambil digit agar spasi, tanda +, tanda hubung, dan kurung tidak ikut.
+      let angka = String(nomor ?? '').trim().replace(/\D/g, '');
+
+      // Ubah awalan panggilan internasional 00 menjadi format tanpa 00.
+      if (angka.startsWith('00')) angka = angka.slice(2);
+
+      // Format Indonesia: 08xxx -> 628xxx; 8xxx -> 628xxx.
+      if (angka.startsWith('0')) {
+        angka = '62' + angka.slice(1);
+      } else if (angka.startsWith('8')) {
+        angka = '62' + angka;
+      }
+
+      // Nomor Indonesia harus memakai kode negara 62 dan panjang yang masuk akal.
+      if (!angka.startsWith('62') || angka.length < 10 || angka.length > 15) {
+        return '';
+      }
+      return angka;
+    }
+
     function sendLink(id) {
       const order = orders.find(o => String(o.id) === String(id));
       if (!order) {
-        alert('❌ Data pesanan tidak ditemukan.');
+        alert('❌ Data pesanan tidak ditemukan. Silakan refresh data lalu coba lagi.');
         return;
       }
 
@@ -687,59 +708,58 @@
 
       if (!order.paid && !confirm('⚠️ Pembeli belum membayar. Tetap kirim link?')) return;
 
-      // Normalisasi nomor Indonesia: 08xxx -> 628xxx, +62xxx -> 62xxx
-      let buyerWA = String(order.wa).replace(/\D/g, '');
-      if (buyerWA.startsWith('0')) buyerWA = '62' + buyerWA.slice(1);
-      if (!buyerWA || buyerWA.length < 9) {
-        alert('❌ Nomor WhatsApp tidak valid: ' + order.wa);
+      const buyerWA = normalisasiNomorWhatsApp(order.wa);
+      if (!buyerWA) {
+        alert(
+          '❌ Format nomor WhatsApp tidak valid: ' + order.wa + '\n\n' +
+          'Gunakan nomor Indonesia seperti 081234567890, 6281234567890, atau +6281234567890.'
+        );
         return;
       }
 
-      // Encode pesan secara benar agar spasi, emoji, dan URL tidak merusak tautan WA.
       const message =
         `Halo ${order.name || 'Kak'} 👋\n\n` +
         `Terima kasih telah memesan "${order.quizTitle || 'produk'}" di Toko Kuis.\n\n` +
         `Berikut link produk yang Anda beli:\n${String(order.link).trim()}\n\n` +
         `Selamat menggunakan produk ini! 🎓`;
 
-      const waUrl = `https://wa.me/${buyerWA}?text=${encodeURIComponent(message)}`;
-
-      // Buka WhatsApp langsung saat tombol diklik, supaya tidak diblokir popup.
+      // Format API WhatsApp mendukung browser laptop maupun browser HP.
+      const waUrl = `https://api.whatsapp.com/send?phone=${buyerWA}&text=${encodeURIComponent(message)}`;
       const btn = document.getElementById(`btn-send-${id}`);
-      const originalText = btn ? btn.innerHTML : '📤 Kirim Link';
+      const originalText = btn ? btn.innerHTML : (order.linkSent ? '🔁 Kirim Ulang' : '📤 Kirim Link');
+
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '⏳ Membuka WhatsApp...';
       }
 
+      // Buka tab secara langsung dari klik pengguna agar tidak mudah diblokir browser.
       const waWindow = window.open(waUrl, '_blank');
       if (!waWindow) {
-        // Fallback: navigasi tab saat ini bila popup diblokir.
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = originalText;
         }
-        if (confirm('Popup diblokir browser. Buka WhatsApp di tab ini?')) {
-          window.location.href = waUrl;
-        } else {
-          alert('Izinkan popup untuk situs ini, lalu klik Kirim Link kembali.');
+        // Fallback khusus saat popup diblokir, termasuk pada beberapa browser HP.
+        if (confirm('WhatsApp tidak terbuka di tab baru. Buka WhatsApp di halaman ini?')) {
+          window.location.assign(waUrl);
         }
         return;
       }
 
-      // Ini hanya menandai bahwa WhatsApp dibuka; pengiriman tetap perlu ditekan di WhatsApp.
+      // Status berarti WhatsApp dibuka; pengguna tetap harus menekan tombol Kirim di WhatsApp.
       apiPost({ action: 'updateLinkSent', id: id })
         .then(result => {
           if (result && result.success) {
             order.linkSent = true;
-            showNotification('✅ WhatsApp dibuka dengan pesan dan link produk. Tekan Kirim di WhatsApp untuk mengirim.', 'success');
+            showNotification('✅ WhatsApp dibuka. Periksa nomor dan tekan Kirim di WhatsApp untuk mengirim pesan.', 'success');
           } else {
-            showNotification('WhatsApp dibuka, tetapi status pesanan tidak berhasil diperbarui.', 'warning');
+            showNotification('WhatsApp dibuka, tetapi status pesanan gagal diperbarui.', 'warning');
           }
         })
         .catch(err => {
           console.error('Gagal memperbarui status link:', err);
-          showNotification('WhatsApp dibuka. Status pengiriman tidak dapat diperbarui.', 'warning');
+          showNotification('WhatsApp dibuka, tetapi status pengiriman tidak dapat diperbarui.', 'warning');
         })
         .finally(() => {
           if (btn) {
